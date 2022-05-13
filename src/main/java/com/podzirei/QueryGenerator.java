@@ -6,9 +6,9 @@ public interface QueryGenerator {
 
     String findAll(Class<?> clazz);
 
-    String findById(Class<?> type, Serializable id);
+    String findByArgument(Class<?> type, Object id);
 
-    String deleteById(Class<?> type, Serializable id);
+    String deleteById(Class<?> type, Object id);
 
     String insert(Object value) throws IllegalAccessException, NoSuchFieldException;
 

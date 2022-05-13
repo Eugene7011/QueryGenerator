@@ -3,7 +3,6 @@ package com.podzirei;
 import com.podzirei.annotation.Column;
 import com.podzirei.annotation.Table;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.StringJoiner;
 
@@ -15,8 +14,8 @@ public class DefaultQueryGenerator implements QueryGenerator {
         String tableName = getTableName(clazz);
 
         StringBuilder query = new StringBuilder("SELECT ");
-        StringJoiner columnNames = addColumnNames(clazz);
-        query.append(columnNames);
+        StringJoiner fields = addFields(clazz);
+        query.append(fields);
         query.append(" FROM ");
         query.append(tableName);
         query.append(";");
@@ -26,16 +25,22 @@ public class DefaultQueryGenerator implements QueryGenerator {
 
     @Override
     //"SELECT id, person_name, person_salary FROM Person WHERE id = '" + id + "'"
-    public String findById(Class<?> type, Serializable id) {
+    public String findByArgument(Class<?> type, Object object) {
         String tableName = getTableName(type);
 
         StringBuilder query = new StringBuilder("SELECT ");
-        StringJoiner columnNames = addColumnNames(type);
-        query.append(columnNames);
+        StringJoiner fields = addFields(type);
+        String[] fieldNames = fields.toString().split(", ");
+
+        query.append(fields);
         query.append(" FROM ");
         query.append(tableName);
-        query.append(" WHERE id = '");
-        query.append(id);
+        query.append(" WHERE ");
+        query.append("id = '");
+        if (object instanceof String) {
+            query.append("object");
+        }
+        query.append(object);
         query.append("'");
 
         return query.toString();
@@ -43,12 +48,12 @@ public class DefaultQueryGenerator implements QueryGenerator {
 
     @Override
     //DELETE id, person_name, person_salary FROM Person WHERE id = '" + id + "'
-    public String deleteById(Class<?> type, Serializable id) {
+    public String deleteById(Class<?> type, Object id) {
         String tableName = getTableName(type);
 
         StringBuilder query = new StringBuilder("DELETE ");
-        StringJoiner columnNames = addColumnNames(type);
-        query.append(columnNames);
+        StringJoiner fields = addFields(type);
+        query.append(fields);
         query.append(" FROM ");
         query.append(tableName);
         query.append(" WHERE id = '");
@@ -69,9 +74,10 @@ public class DefaultQueryGenerator implements QueryGenerator {
         query.append(tableName);
         query.append(" (");
 
-        StringJoiner columnNames = addColumnNames(type);
+        StringJoiner columnNames = addFields(type);
         query.append(columnNames);
-        query.append(")\n");
+        query.append(")");
+        query.append(System.getProperty("line.separator"));
         query.append("VALUES (");
 
         StringJoiner columnValues = new StringJoiner(", ");
@@ -96,7 +102,7 @@ public class DefaultQueryGenerator implements QueryGenerator {
 
         StringBuilder query = new StringBuilder("UPDATE ");
         query.append(tableName);
-        query.append("\n");
+        query.append(System.getProperty("line.separator"));
         query.append("SET ");
 
         StringJoiner columnNames = new StringJoiner(", ");
@@ -110,16 +116,25 @@ public class DefaultQueryGenerator implements QueryGenerator {
             Column columnAnnotation = field.getAnnotation(Column.class);
             String columnName = columnAnnotation.name().isEmpty() ? field.getName() : columnAnnotation.name();
             Object fieldValue = field.get(value);
+            if (fieldValue == null) {
+                columnNames.add(columnName + " = " + null);
+                generateQuery(query, columnNames, id);
+                return query.toString();
+            }
 
-            columnNames.add(columnName + " = " + fieldValue.toString()); // конкантенация, можно переделать если заморочиться
+            columnNames.add(columnName + " = " + fieldValue.toString());
         }
 
-        query.append(columnNames);
-        query.append("\n");
-        query.append("WHERE id = ");
-        query.append(id);
+        generateQuery(query, columnNames, id);
 
         return query.toString();
+    }
+
+    private void generateQuery(StringBuilder query, StringJoiner columnNames, int id) {
+        query.append(columnNames);
+        query.append(System.getProperty("line.separator"));
+        query.append("WHERE id = ");
+        query.append(id);
     }
 
     private String getTableName(Class<?> clazz) {
@@ -131,15 +146,15 @@ public class DefaultQueryGenerator implements QueryGenerator {
         return tableName;
     }
 
-    private StringJoiner addColumnNames(Class<?> clazz) {
-        StringJoiner columnNames = new StringJoiner(", ");
+    private StringJoiner addFields(Class<?> clazz) {
+        StringJoiner fields = new StringJoiner(", ");
         for (Field declaredField : clazz.getDeclaredFields()) {
             Column columnAnnotation = declaredField.getAnnotation(Column.class);
             if (columnAnnotation != null) {
                 String columnName = columnAnnotation.name().isEmpty() ? declaredField.getName() : columnAnnotation.name();
-                columnNames.add(columnName);
+                fields.add(columnName);
             }
         }
-        return columnNames;
+        return fields;
     }
 }

@@ -22,7 +22,7 @@ class DefaultQueryGeneratorTest {
 
         String expectedQuery = "SELECT id, person_name, person_salary FROM Person WHERE id = '" + id + "'";
         DefaultQueryGenerator queryGenerator = new DefaultQueryGenerator();
-        String findById = queryGenerator.findById(Person.class, id);
+        String findById = queryGenerator.findByArgument(Person.class, id);
         assertEquals(expectedQuery, findById);
     }
 
@@ -42,7 +42,8 @@ class DefaultQueryGeneratorTest {
     public void testGenerateInsert() throws NoSuchFieldException, IllegalAccessException {
         Person person = new Person(3, "Anton", 234);
 
-        String expectedQuery = "INSERT INTO Person (id, person_name, person_salary)\nVALUES (3, Anton, 234.0)";
+        String expectedQuery = "INSERT INTO Person (id, person_name, person_salary)"
+                + System.getProperty("line.separator") +"VALUES (3, Anton, 234.0)";
         DefaultQueryGenerator queryGenerator = new DefaultQueryGenerator();
         String deleteById = queryGenerator.insert(person);
         assertEquals(expectedQuery, deleteById);
@@ -53,7 +54,8 @@ class DefaultQueryGeneratorTest {
     public void testGenerateUpdate() throws IllegalAccessException {
         Person person = new Person(3, "Anton", 1000);
 
-        String expectedQuery = "UPDATE Person\nSET id = 3, person_name = Anton, person_salary = 1000.0\nWHERE id = 3";
+        String expectedQuery = "UPDATE Person" + System.getProperty("line.separator") +"SET id = 3, person_name = Anton, person_salary = 1000.0"
+                + System.getProperty("line.separator") +"WHERE id = 3";
         DefaultQueryGenerator queryGenerator = new DefaultQueryGenerator();
         String deleteById = queryGenerator.update(person);
         assertEquals(expectedQuery, deleteById);
