@@ -26,7 +26,7 @@ public class DefaultQueryGenerator implements QueryGenerator {
 
     @Override
     //"SELECT id, person_name, person_salary FROM Person WHERE id = "id";
-    public String findByArgument(Class<?> type, Object value) {
+    public String findByArgument(Class<?> type, Object id) {
         String tableName = getTableName(type);
 
         StringBuilder query = new StringBuilder("SELECT ");
@@ -39,7 +39,7 @@ public class DefaultQueryGenerator implements QueryGenerator {
         query.append(" WHERE ");
         query.append(argumentColumnName);
         query.append(" = ");
-        query.append(value);
+        query.append(id);
         query.append(";");
 
         return query.toString();
@@ -60,6 +60,9 @@ public class DefaultQueryGenerator implements QueryGenerator {
         query.append(" WHERE ");
         query.append(argumentColumnName);
         query.append(" = ");
+        if (value instanceof String) {
+            query.append("'").append(value).append("'");
+        }
         query.append(value);
         query.append(";");
 
@@ -145,12 +148,12 @@ public class DefaultQueryGenerator implements QueryGenerator {
             if (columnValue == null) {
                 return null;
             }
-            if (field.getType() == String.class) {
+            if (field.getType().isAssignableFrom(CharSequence.class)) {
                 return "'" + columnValue + "'";
             }
             return "" + columnValue + "";
         } catch (IllegalAccessException e) {
-            throw new RuntimeException("Value is not an instance of the class declared to this field", e);
+            throw new RuntimeException("Invalid data. Entered value is not an instance of the class declared to the field", e);
         }
     }
 
