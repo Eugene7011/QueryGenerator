@@ -1,6 +1,5 @@
 package com.podzirei;
 
-import java.io.Serializable;
 
 public interface QueryGenerator {
 
